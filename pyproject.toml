@@ -1,0 +1,12 @@
+[project]
+name = "cn-01-kemmy-comfyui-prompt-library"
+version = "0.1.0"
+description = "Thumbnail-backed reusable prompt library node for ComfyUI"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "kemmy2302" }]
+dependencies = []
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
