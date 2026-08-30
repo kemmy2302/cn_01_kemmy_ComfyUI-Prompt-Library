@@ -9,7 +9,7 @@ from nodes import OPTPromptLibrarySelector
 
 
 class PromptLibrarySelectorTests(unittest.TestCase):
-    def test_legacy_ordered_multi_selection(self):
+    def test_simple_combine_keeps_selection_order(self):
         state = {
             "selected_ids": ["b", "a"],
             "snapshot": [
@@ -18,7 +18,7 @@ class PromptLibrarySelectorTests(unittest.TestCase):
             ],
         }
         result = OPTPromptLibrarySelector().select(
-            json.dumps(state), "newline", "legacy combined"
+            json.dumps(state), "newline", True
         )
         self.assertEqual(result, ("bob\nalice",))
 

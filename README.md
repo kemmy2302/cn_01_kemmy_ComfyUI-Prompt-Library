@@ -106,7 +106,7 @@ The exact separator is controlled by the `separator` widget.
 
 ## Multiple characters and assignments
 
-Set `output_mode` to `grouped characters` when a prompt contains more than one character. This is the default mode.
+By default, character grouping is active. Leave `simple_combine` unchecked when a prompt contains more than one character.
 
 Every selected preset has an assignment selector in **Selected prompts (output order)**:
 
@@ -144,7 +144,7 @@ classroom background
 
 This structured text is particularly useful before an Ollama or other LLM node because the model can tell which appearance, outfit, item, or pose belongs to which person. It also gives Anima's text encoder clearer character boundaries than one undifferentiated tag list.
 
-Use `legacy combined` when you want the earlier behavior: all selected prompts are joined into one unlabelled string in selection order.
+Check `simple_combine` when you want all selected prompts joined into one unlabelled string in selection order. While it is checked, the `Character 1 / Character 2 / Shared` assignment selectors are disabled because those assignments are not used.
 
 Assignments and the `Treat as character` flag are stored in workflow snapshots. Older presets remain compatible; recognized character categories are detected automatically.
 

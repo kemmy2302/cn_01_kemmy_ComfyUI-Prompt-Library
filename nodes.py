@@ -45,9 +45,9 @@ class OPTPromptLibrarySelector:
                 ),
             },
             "optional": {
-                "output_mode": (
-                    ["grouped characters", "legacy combined"],
-                    {"default": "grouped characters"},
+                "simple_combine": (
+                    "BOOLEAN",
+                    {"default": False, "tooltip": "Combine selected prompts in order without Character or Shared sections."},
                 ),
             },
         }
@@ -73,7 +73,12 @@ class OPTPromptLibrarySelector:
             "人物",
         }
 
-    def select(self, selection_json, separator, output_mode="grouped characters"):
+    def select(
+        self,
+        selection_json,
+        separator,
+        simple_combine=False,
+    ):
         state = _parse_json(selection_json, {})
         snapshots = state.get("snapshot", []) if isinstance(state, dict) else []
         selected_ids = state.get("selected_ids", []) if isinstance(state, dict) else []
@@ -88,7 +93,7 @@ class OPTPromptLibrarySelector:
             _clean(entry.get("prompt", entry.get("positive_prompt", "")))
             for entry in entries
         ]
-        if output_mode == "legacy combined":
+        if simple_combine:
             return (joiner.join(value for value in prompts if value),)
 
         assignments = state.get("assignments", {}) if isinstance(state, dict) else {}

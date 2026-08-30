@@ -92,6 +92,7 @@ function addDomEditor(node, name, container, minHeight = 520) {
 function setupLibraryNode(node) {
   ensureStyles();
   const stateWidget = findWidget(node, "selection_json");
+  const simpleCombineWidget = findWidget(node, "simple_combine");
   hideWidget(stateWidget);
   let state = parseJSON(stateWidget?.value, { selected_ids: [], snapshot: [] });
   state.selected_ids ||= [];
@@ -178,7 +179,8 @@ function setupLibraryNode(node) {
       return isCharacterPreset(item);
     }).length;
     const maximum = Math.max(2, selectedCharacterCount, ...assignedNumbers) + 1;
-    const select = element("select", { className: "opt-assignment-select", title: "Assign this preset to a character or to shared instructions" }, [
+    const groupingDisabled = simpleCombineWidget?.value === true;
+    const select = element("select", { className: "opt-assignment-select", disabled: groupingDisabled, title: groupingDisabled ? "Character grouping is disabled while simple combination is enabled" : "Assign this preset to a character or to shared instructions" }, [
       element("option", { value: "shared", textContent: "Shared" }),
       ...Array.from({ length: maximum }, (_, index) => element("option", {
         value: `character_${index + 1}`,
@@ -390,6 +392,13 @@ function setupLibraryNode(node) {
   ]);
   container.append(topSpacer, toolbar, filterBar, status, selectedArea, libraryArea);
   addDomEditor(node, "prompt_library_editor", container, 560);
+  if (simpleCombineWidget) {
+    const originalSimpleCombineCallback = simpleCombineWidget.callback;
+    simpleCombineWidget.callback = function () {
+      originalSimpleCombineCallback?.apply(this, arguments);
+      renderSelected();
+    };
+  }
 
   jsonRequest(`${API_ROOT}/library`).then((remote) => {
     const merged = new Map(state.snapshot.map((entry) => [entry.id, entry]));
