@@ -17,6 +17,8 @@ The node has no Python package dependencies.
 - Searches preset names, categories, and prompt contents.
 - Filters the list to all, selected, or unselected presets.
 - Selects multiple presets and lets you control their output order.
+- Keeps multiple characters separate with `Character 1`, `Character 2`, and `Shared` assignments.
+- Assigns outfits, poses, items, and other presets to a specific character.
 - Combines the selected presets into one standard ComfyUI `STRING` output.
 - Keeps the selected area visible while the main library scrolls separately.
 - Saves a snapshot of selected prompt text in the workflow for portability.
@@ -66,7 +68,8 @@ If the node does not appear, restart the ComfyUI backend, not only the browser p
 6. Optionally choose a PNG, JPG, JPEG, or WebP thumbnail.
 7. Click **Save preset**.
 8. Select one or more preset cards.
-9. Connect the `prompt` output to any node that accepts `STRING`.
+9. For multiple characters, assign each selected preset to `Character 1`, `Character 2`, or `Shared`.
+10. Connect the `prompt` output to any node that accepts `STRING`.
 
 <img width="395" height="806" alt="PLS02" src="https://github.com/user-attachments/assets/3a1a7ed7-68c4-46c0-9f30-554cf981a753" />
 
@@ -101,6 +104,51 @@ The exact separator is controlled by the `separator` widget.
 | `comma` | comma and space |
 | `BREAK` | `BREAK` on its own line |
 
+## Multiple characters and assignments
+
+Set `output_mode` to `grouped characters` when a prompt contains more than one character. This is the default mode.
+
+Every selected preset has an assignment selector in **Selected prompts (output order)**:
+
+- `Character 1`, `Character 2`, and so on place that preset inside a specific character block;
+- `Shared` places it under instructions that apply to the whole image.
+
+Presets in the `Character`, `Characters`, `キャラ`, `キャラクター`, or `人物` categories are automatically assigned to separate character numbers when selected. You can also enable **Treat as character** while editing any preset. The assignment can always be changed manually afterward.
+
+For example:
+
+```text
+Alice character preset       -> Character 1
+Red dress outfit             -> Character 1
+Bob character preset         -> Character 2
+School uniform outfit        -> Character 2
+Standing side by side pose   -> Shared
+Classroom background         -> Shared
+```
+
+produces:
+
+```text
+Character 1:
+Alice character description,
+red dress
+
+Character 2:
+Bob character description,
+school uniform
+
+Shared instructions:
+standing side by side,
+classroom background
+```
+
+This structured text is particularly useful before an Ollama or other LLM node because the model can tell which appearance, outfit, item, or pose belongs to which person. It also gives Anima's text encoder clearer character boundaries than one undifferentiated tag list.
+
+Use `legacy combined` when you want the earlier behavior: all selected prompts are joined into one unlabelled string in selection order.
+
+Assignments and the `Treat as character` flag are stored in workflow snapshots. Older presets remain compatible; recognized character categories are detected automatically.
+
+> Screenshot placeholder: selected presets assigned to Character 1, Character 2, and Shared.
 ## Categories and tabs
 
 Click **Categories** to manage category names.

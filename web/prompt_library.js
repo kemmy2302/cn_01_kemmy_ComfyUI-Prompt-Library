@@ -18,7 +18,7 @@ const css = `
 .opt-library-pane{flex:1 1 auto;min-height:160px;overflow-x:hidden;overflow-y:auto;padding-top:4px}
 .opt-panel button,.opt-panel input,.opt-panel select,.opt-panel textarea{font:inherit;color:inherit;background:#292929;border:1px solid #555;border-radius:4px;padding:4px;box-sizing:border-box}
 .opt-panel button{cursor:pointer}.opt-panel button:hover{background:#3a3a3a}.opt-panel input[type=text],.opt-panel textarea,.opt-panel select{width:100%}
-.opt-card{border:1px solid #555;border-radius:6px;padding:6px;margin:6px 0;background:#202020;max-width:100%;box-sizing:border-box}.opt-card-head{display:flex;gap:6px;align-items:center;min-width:0;max-width:100%;flex-wrap:wrap}.opt-card img,.opt-card-head>img{width:58px;height:58px;min-width:58px;object-fit:cover;border-radius:5px;background:#111}.opt-card textarea{min-height:58px;resize:vertical;margin-top:5px}.opt-muted{opacity:.7}.opt-selected{border-color:#6aa9ff;background:#17283c;box-shadow:inset 3px 0 #6aa9ff}.opt-title{font-weight:700;margin:5px 0}.opt-hidden{display:none!important}.opt-status{min-height:16px;color:#9dccff}
+.opt-card{border:1px solid #555;border-radius:6px;padding:6px;margin:6px 0;background:#202020;max-width:100%;box-sizing:border-box}.opt-card-head{display:flex;gap:6px;align-items:center;min-width:0;max-width:100%;flex-wrap:wrap}.opt-card img,.opt-card-head>img{width:58px;height:58px;min-width:58px;object-fit:cover;border-radius:5px;background:#111}.opt-card textarea{min-height:58px;resize:vertical;margin-top:5px}.opt-muted{opacity:.7}.opt-selected{border-color:#6aa9ff;background:#17283c;box-shadow:inset 3px 0 #6aa9ff}.opt-title{font-weight:700;margin:5px 0}.opt-hidden{display:none!important}.opt-status{min-height:16px;color:#9dccff}.opt-assignment-select{width:auto!important;min-width:105px;max-width:135px}
 `;
 
 function ensureStyles() {
@@ -96,6 +96,7 @@ function setupLibraryNode(node) {
   let state = parseJSON(stateWidget?.value, { selected_ids: [], snapshot: [] });
   state.selected_ids ||= [];
   state.snapshot ||= [];
+  state.assignments ||= {};
   let library = { version: 2, categories: [], entries: [...state.snapshot] };
 
   const container = element("div", { className: "opt-panel opt-library-panel" });
@@ -134,7 +135,62 @@ function setupLibraryNode(node) {
     return { version: 2, categories, entries };
   }
   library = normalizeLibrary(library);
+  function isCharacterPreset(entry) {
+    const category = String(entry?.category || "").trim().toLocaleLowerCase();
+    return entry?.is_character === true || ["character", "characters", "character preset", "キャラ", "キャラクター", "人物"].includes(category);
+  }
+  function nextCharacterAssignment() {
+    const used = new Set(Object.values(state.assignments || {}).map((value) => {
+      const match = /^character_(\d+)$/.exec(String(value));
+      return match ? Number(match[1]) : null;
+    }).filter(Boolean));
+    let number = 1;
+    while (used.has(number)) number += 1;
+    return `character_${number}`;
+  }
+  function ensureAssignments() {
+    state.assignments ||= {};
+    const byId = new Map(library.entries.map((entry) => [entry.id, entry]));
+    state.selected_ids.forEach((id) => {
+      if (state.assignments[id]) return;
+      const entry = byId.get(id);
+      state.assignments[id] = isCharacterPreset(entry) ? nextCharacterAssignment() : "shared";
+    });
+  }
+  function setSelected(entry, selected) {
+    state.assignments ||= {};
+    if (selected) {
+      if (!state.selected_ids.includes(entry.id)) state.selected_ids.push(entry.id);
+      if (!state.assignments[entry.id]) state.assignments[entry.id] = isCharacterPreset(entry) ? nextCharacterAssignment() : "shared";
+    } else {
+      state.selected_ids = state.selected_ids.filter((id) => id !== entry.id);
+      delete state.assignments[entry.id];
+    }
+  }
+  function assignmentSelect(entry) {
+    ensureAssignments();
+    const assignedNumbers = Object.values(state.assignments).map((value) => {
+      const match = /^character_(\d+)$/.exec(String(value));
+      return match ? Number(match[1]) : 0;
+    });
+    const selectedCharacterCount = state.selected_ids.filter((id) => {
+      const item = library.entries.find((entry) => entry.id === id);
+      return isCharacterPreset(item);
+    }).length;
+    const maximum = Math.max(2, selectedCharacterCount, ...assignedNumbers) + 1;
+    const select = element("select", { className: "opt-assignment-select", title: "Assign this preset to a character or to shared instructions" }, [
+      element("option", { value: "shared", textContent: "Shared" }),
+      ...Array.from({ length: maximum }, (_, index) => element("option", {
+        value: `character_${index + 1}`,
+        textContent: `Character ${index + 1}`,
+      })),
+    ]);
+    select.value = state.assignments[entry.id] || "shared";
+    select.onchange = () => { state.assignments[entry.id] = select.value; sync(); render(); };
+    return select;
+  }
   function sync() {
+    ensureAssignments();
     const byId = new Map(library.entries.map((entry) => [entry.id, entry]));
     state.snapshot = state.selected_ids.map((id) => byId.get(id)).filter(Boolean);
     if (stateWidget) {
@@ -156,7 +212,7 @@ function setupLibraryNode(node) {
     const summary = element("div", { className: "opt-selection-summary" }, [
       element("span", { className: "opt-count", textContent: `Selected: ${state.selected_ids.length}` }),
       element("button", { textContent: selectedCollapsed ? "Show selected" : "Hide selected", onclick: () => { selectedCollapsed = !selectedCollapsed; renderSelected(); } }),
-      element("button", { textContent: "Clear all", disabled: !state.selected_ids.length, onclick: () => { state.selected_ids = []; sync(); render(); } }),
+      element("button", { textContent: "Clear all", disabled: !state.selected_ids.length, onclick: () => { state.selected_ids = []; state.assignments = {}; sync(); render(); } }),
     ]);
     selectedArea.append(summary);
     if (selectedCollapsed) return;
@@ -172,9 +228,10 @@ function setupLibraryNode(node) {
       row.append(
         image,
         element("span", { textContent: `${index + 1}. ${entry.name}`, style: "flex:1" }),
+        assignmentSelect(entry),
         element("button", { textContent: "↑", onclick: () => selectedMove(index, -1) }),
         element("button", { textContent: "↓", onclick: () => selectedMove(index, 1) }),
-        element("button", { textContent: "Remove", onclick: () => { state.selected_ids.splice(index, 1); sync(); render(); } }),
+        element("button", { textContent: "Remove", onclick: () => { state.selected_ids.splice(index, 1); delete state.assignments[id]; sync(); render(); } }),
       );
       selectedArea.append(row);
     });
@@ -245,12 +302,15 @@ function setupLibraryNode(node) {
     category.value = current.category || library.categories[0]?.name || "Uncategorized";
     const prompt = element("textarea", { value: current.prompt || "", placeholder: "Prompt" });
     const file = element("input", { type: "file", accept: "image/png,image/jpeg,image/webp" });
+    const characterFlag = element("input", { type: "checkbox", checked: isCharacterPreset(current) });
+    const characterLabel = element("label", { textContent: " Treat as character", title: "Automatically assign this preset to its own character group when selected" }, [characterFlag]);
     const actions = element("div", { className: "opt-toolbar" });
     actions.append(
       element("button", { textContent: "Save preset", onclick: async () => {
         current.name = name.value.trim() || "Untitled";
         current.category = category.value.trim() || "Uncategorized";
         current.prompt = prompt.value;
+        current.is_character = characterFlag.checked;
         if (file.files[0]) {
           const form = new FormData(); form.append("entry_id", current.id); form.append("file", file.files[0]);
           const uploaded = await jsonRequest(`${API_ROOT}/thumbnail`, { method: "POST", body: form });
@@ -262,7 +322,7 @@ function setupLibraryNode(node) {
       }}),
       element("button", { textContent: "Cancel", onclick: () => render() }),
     );
-    card.append(name, category, prompt, file, actions);
+    card.append(name, category, characterLabel, prompt, file, actions);
     libraryArea.replaceChildren(card);
   }
 
@@ -299,14 +359,12 @@ function setupLibraryNode(node) {
       const image = element("img", { src: thumbnailUrl(entry), alt: entry.name });
       if (!entry.thumbnail) image.style.display = "none";
       const checkbox = element("input", { type: "checkbox", checked: chosen, onclick: (event) => event.stopPropagation(), onchange: () => {
-        if (checkbox.checked && !state.selected_ids.includes(entry.id)) state.selected_ids.push(entry.id);
-        if (!checkbox.checked) state.selected_ids = state.selected_ids.filter((id) => id !== entry.id);
+        setSelected(entry, checkbox.checked);
         sync(); render();
       }});
       const card = element("div", { className: `opt-card${chosen ? " opt-selected" : ""}`, title: "Click card to select or unselect", onclick: (event) => {
         if (event.target.closest("button,input,textarea,select")) return;
-        if (state.selected_ids.includes(entry.id)) state.selected_ids = state.selected_ids.filter((id) => id !== entry.id);
-        else state.selected_ids.push(entry.id);
+        setSelected(entry, !state.selected_ids.includes(entry.id));
         sync(); render();
       }});
       const info = element("div", { style: "flex:1" }, [
@@ -317,7 +375,7 @@ function setupLibraryNode(node) {
       const actions = element("div", { className: "opt-toolbar" }, [
         element("button", { textContent: "Edit", onclick: () => editEntry(entry) }),
         element("button", { textContent: "Duplicate", onclick: async () => { library.entries.push({ ...entry, id: uuid(), name: `${entry.name} copy`, thumbnail: "" }); await saveLibrary(); render(); } }),
-        element("button", { textContent: "Delete", onclick: async () => { if (!confirm(`Delete ${entry.name}?`)) return; library.entries = library.entries.filter((item) => item.id !== entry.id); state.selected_ids = state.selected_ids.filter((id) => id !== entry.id); await saveLibrary(); sync(); render(); } }),
+        element("button", { textContent: "Delete", onclick: async () => { if (!confirm(`Delete ${entry.name}?`)) return; library.entries = library.entries.filter((item) => item.id !== entry.id); state.selected_ids = state.selected_ids.filter((id) => id !== entry.id); delete state.assignments[entry.id]; await saveLibrary(); sync(); render(); } }),
       ]);
       card.append(head, actions);
       libraryArea.append(card);
@@ -345,6 +403,7 @@ function setupLibraryNode(node) {
     state = parseJSON(stateWidget?.value, state);
     state.selected_ids ||= [];
     state.snapshot ||= [];
+  state.assignments ||= {};
     const merged = new Map(library.entries.map((entry) => [entry.id, entry]));
     state.snapshot.forEach((entry) => merged.set(entry.id, entry));
     library.entries = [...merged.values()];

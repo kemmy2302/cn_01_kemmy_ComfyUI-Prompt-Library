@@ -43,7 +43,13 @@ class OPTPromptLibrarySelector:
                     ["comma + newline", "newline", "comma", "BREAK"],
                     {"default": "comma + newline"},
                 ),
-            }
+            },
+            "optional": {
+                "output_mode": (
+                    ["grouped characters", "legacy combined"],
+                    {"default": "grouped characters"},
+                ),
+            },
         }
 
     @staticmethod
@@ -55,7 +61,19 @@ class OPTPromptLibrarySelector:
             "BREAK": "\nBREAK\n",
         }.get(mode, ",\n")
 
-    def select(self, selection_json, separator):
+    @staticmethod
+    def _is_character(entry):
+        category = _clean(entry.get("category")).casefold()
+        return entry.get("is_character") is True or category in {
+            "character",
+            "characters",
+            "character preset",
+            "キャラ",
+            "キャラクター",
+            "人物",
+        }
+
+    def select(self, selection_json, separator, output_mode="grouped characters"):
         state = _parse_json(selection_json, {})
         snapshots = state.get("snapshot", []) if isinstance(state, dict) else []
         selected_ids = state.get("selected_ids", []) if isinstance(state, dict) else []
@@ -70,8 +88,42 @@ class OPTPromptLibrarySelector:
             _clean(entry.get("prompt", entry.get("positive_prompt", "")))
             for entry in entries
         ]
-        return (joiner.join(value for value in prompts if value),)
+        if output_mode == "legacy combined":
+            return (joiner.join(value for value in prompts if value),)
 
+        assignments = state.get("assignments", {}) if isinstance(state, dict) else {}
+        if not isinstance(assignments, dict):
+            assignments = {}
+        groups, shared, used_groups = {}, [], set()
+        next_group = 1
+        for entry, prompt in zip(entries, prompts):
+            if not prompt:
+                continue
+            assignment = _clean(assignments.get(str(entry.get("id")))).casefold()
+            if assignment == "shared":
+                group = None
+            elif assignment.startswith("character_") and assignment[10:].isdigit():
+                group = int(assignment[10:])
+            elif self._is_character(entry):
+                while next_group in used_groups:
+                    next_group += 1
+                group = next_group
+                next_group += 1
+            else:
+                group = None
+            if group is None:
+                shared.append(prompt)
+            else:
+                used_groups.add(group)
+                groups.setdefault(group, []).append(prompt)
+
+        sections = [
+            f"Character {group}:\n{joiner.join(groups[group])}"
+            for group in sorted(groups)
+        ]
+        if shared:
+            sections.append(f"Shared instructions:\n{joiner.join(shared)}")
+        return ("\n\n".join(sections),)
 
 
 NODE_CLASS_MAPPINGS = {
