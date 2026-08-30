@@ -6,7 +6,8 @@ This node is useful when you repeatedly reuse character descriptions, outfits, p
 
 The node has no Python package dependencies.
 
-> Screenshot placeholder: full Prompt Library node with several presets selected.
+<img width="318" height="656" alt="PLS01" src="https://github.com/user-attachments/assets/0588f133-aed9-4c9f-9346-14c50d4c4de9" /><img width="512" height="512" alt="rinFlanime_v14_t2i_hires_00103_" src="https://github.com/user-attachments/assets/c764a8b8-86d9-4977-aead-fde14b6cc5f0" />
+
 
 ## What it does
 
@@ -67,7 +68,7 @@ If the node does not appear, restart the ComfyUI backend, not only the browser p
 8. Select one or more preset cards.
 9. Connect the `prompt` output to any node that accepts `STRING`.
 
-> Screenshot placeholder: Add preset editor with name, category, prompt, and thumbnail fields.
+<img width="395" height="806" alt="PLS02" src="https://github.com/user-attachments/assets/3a1a7ed7-68c4-46c0-9f30-554cf981a753" />
 
 ## Selecting and ordering prompts
 
@@ -121,7 +122,7 @@ Style
 
 Categories are selected from a list when editing presets, which helps avoid spelling differences and duplicate category names.
 
-> Screenshot placeholder: category settings and horizontally scrollable category tabs.
+<img width="395" height="801" alt="PLS03" src="https://github.com/user-attachments/assets/23429138-771b-4460-a30a-935c9f95611d" />
 
 ## Search and filters
 
