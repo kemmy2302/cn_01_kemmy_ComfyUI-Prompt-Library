@@ -146,6 +146,20 @@ This structured text is particularly useful before an Ollama or other LLM node b
 
 Check `simple_combine` when you want all selected prompts joined into one unlabelled string in selection order. While it is checked, the `Character 1 / Character 2 / Shared` assignment selectors are disabled because those assignments are not used.
 
+Enable `anima_character_clauses` to generate Anima-oriented character clauses from the same assignments:
+
+```text
+(chara1 is a girl, black hair, red eyes, black kimono.),
+(chara2 is a boy, white hair, blue eyes, school uniform.),
+classroom, standing side by side
+```
+
+Everything assigned to a character, including outfits, poses, and items, stays inside that character's parentheses. Shared background, composition, lighting, and style prompts remain outside the character clauses. The node adds the final period, closing parenthesis, and comma automatically; write `a girl`, `a boy`, or another identity phrase in the character preset itself.
+
+`anima_character_clauses` takes priority if both flags are true. In the normal GUI, enabling either `simple_combine` or `anima_character_clauses` automatically disables the other flag.
+
+For an Ollama workflow, pass these clauses through the LLM only when its system prompt explicitly instructs it to preserve every `(charaN is ... .),` block and keep character-specific traits inside the matching block.
+
 Assignments and the `Treat as character` flag are stored in workflow snapshots. Older presets remain compatible; recognized character categories are detected automatically.
 
 > Screenshot placeholder: selected presets assigned to Character 1, Character 2, and Shared.

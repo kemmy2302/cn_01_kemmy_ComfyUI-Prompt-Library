@@ -49,6 +49,10 @@ class OPTPromptLibrarySelector:
                     "BOOLEAN",
                     {"default": False, "tooltip": "Combine selected prompts in order without Character or Shared sections."},
                 ),
+                "anima_character_clauses": (
+                    "BOOLEAN",
+                    {"default": False, "tooltip": "Format character groups as (charaN is ... .), clauses. This takes priority over simple_combine."},
+                ),
             },
         }
 
@@ -78,6 +82,7 @@ class OPTPromptLibrarySelector:
         selection_json,
         separator,
         simple_combine=False,
+        anima_character_clauses=False,
     ):
         state = _parse_json(selection_json, {})
         snapshots = state.get("snapshot", []) if isinstance(state, dict) else []
@@ -93,7 +98,7 @@ class OPTPromptLibrarySelector:
             _clean(entry.get("prompt", entry.get("positive_prompt", "")))
             for entry in entries
         ]
-        if simple_combine:
+        if simple_combine and not anima_character_clauses:
             return (joiner.join(value for value in prompts if value),)
 
         assignments = state.get("assignments", {}) if isinstance(state, dict) else {}
@@ -121,6 +126,18 @@ class OPTPromptLibrarySelector:
             else:
                 used_groups.add(group)
                 groups.setdefault(group, []).append(prompt)
+
+        if anima_character_clauses:
+            sections = []
+            for group in sorted(groups):
+                parts = [value.rstrip().rstrip(",") for value in groups[group]]
+                content = joiner.join(parts).rstrip()
+                if content and not content.endswith((".", "!", "?")):
+                    content += "."
+                sections.append(f"(chara{group} is {content}),")
+            if shared:
+                sections.append(joiner.join(shared))
+            return ("\n".join(sections),)
 
         sections = [
             f"Character {group}:\n{joiner.join(groups[group])}"

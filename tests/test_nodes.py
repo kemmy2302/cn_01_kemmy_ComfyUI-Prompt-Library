@@ -89,5 +89,57 @@ class PromptLibrarySelectorTests(unittest.TestCase):
         self.assertEqual(result, ("Shared instructions:\nAlice",))
 
 
+    def test_anima_character_clauses_keep_character_content_together(self):
+        state = {
+            "selected_ids": ["a", "outfit-a", "b", "outfit-b", "scene"],
+            "assignments": {
+                "a": "character_1",
+                "outfit-a": "character_1",
+                "b": "character_2",
+                "outfit-b": "character_2",
+                "scene": "shared",
+            },
+            "snapshot": [
+                {"id": "a", "prompt": "a girl, black hair,"},
+                {"id": "outfit-a", "prompt": "black kimono"},
+                {"id": "b", "prompt": "a boy, white hair"},
+                {"id": "outfit-b", "prompt": "school uniform."},
+                {"id": "scene", "prompt": "classroom, standing side by side"},
+            ],
+        }
+        result = OPTPromptLibrarySelector().select(
+            json.dumps(state), "comma", False, True
+        )
+        self.assertEqual(
+            result,
+            (
+                "(chara1 is a girl, black hair, black kimono.),\n"
+                "(chara2 is a boy, white hair, school uniform.),\n"
+                "classroom, standing side by side",
+            ),
+        )
+
+    def test_anima_character_clauses_take_priority_over_simple_combine(self):
+        state = {
+            "selected_ids": ["a"],
+            "assignments": {"a": "character_1"},
+            "snapshot": [{"id": "a", "prompt": "a girl"}],
+        }
+        result = OPTPromptLibrarySelector().select(
+            json.dumps(state), "comma", True, True
+        )
+        self.assertEqual(result, ("(chara1 is a girl.),",))
+
+    def test_anima_character_clauses_with_shared_only(self):
+        state = {
+            "selected_ids": ["scene"],
+            "assignments": {"scene": "shared"},
+            "snapshot": [{"id": "scene", "prompt": "classroom"}],
+        }
+        result = OPTPromptLibrarySelector().select(
+            json.dumps(state), "comma", False, True
+        )
+        self.assertEqual(result, ("classroom",))
+
 if __name__ == "__main__":
     unittest.main()

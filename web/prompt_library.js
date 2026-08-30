@@ -93,6 +93,7 @@ function setupLibraryNode(node) {
   ensureStyles();
   const stateWidget = findWidget(node, "selection_json");
   const simpleCombineWidget = findWidget(node, "simple_combine");
+  const animaCharacterClausesWidget = findWidget(node, "anima_character_clauses");
   hideWidget(stateWidget);
   let state = parseJSON(stateWidget?.value, { selected_ids: [], snapshot: [] });
   state.selected_ids ||= [];
@@ -179,7 +180,7 @@ function setupLibraryNode(node) {
       return isCharacterPreset(item);
     }).length;
     const maximum = Math.max(2, selectedCharacterCount, ...assignedNumbers) + 1;
-    const groupingDisabled = simpleCombineWidget?.value === true;
+    const groupingDisabled = simpleCombineWidget?.value === true && animaCharacterClausesWidget?.value !== true;
     const select = element("select", { className: "opt-assignment-select", disabled: groupingDisabled, title: groupingDisabled ? "Character grouping is disabled while simple combination is enabled" : "Assign this preset to a character or to shared instructions" }, [
       element("option", { value: "shared", textContent: "Shared" }),
       ...Array.from({ length: maximum }, (_, index) => element("option", {
@@ -396,6 +397,21 @@ function setupLibraryNode(node) {
     const originalSimpleCombineCallback = simpleCombineWidget.callback;
     simpleCombineWidget.callback = function () {
       originalSimpleCombineCallback?.apply(this, arguments);
+      if (simpleCombineWidget.value === true && animaCharacterClausesWidget?.value === true) {
+        animaCharacterClausesWidget.value = false;
+      }
+      node.graph?.setDirtyCanvas(true, true);
+      renderSelected();
+    };
+  }
+  if (animaCharacterClausesWidget) {
+    const originalAnimaCharacterClausesCallback = animaCharacterClausesWidget.callback;
+    animaCharacterClausesWidget.callback = function () {
+      originalAnimaCharacterClausesCallback?.apply(this, arguments);
+      if (animaCharacterClausesWidget.value === true && simpleCombineWidget?.value === true) {
+        simpleCombineWidget.value = false;
+      }
+      node.graph?.setDirtyCanvas(true, true);
       renderSelected();
     };
   }
