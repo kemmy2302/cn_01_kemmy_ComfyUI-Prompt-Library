@@ -8,5 +8,12 @@ license = { text = "MIT" }
 authors = [{ name = "kemmy2302" }]
 dependencies = []
 
+[project.urls]
+Repository = "https://github.com/kemmy2302/cn_01_kemmy_ComfyUI-Prompt-Library"
+
+[tool.comfy]
+PublisherId = "kemmy"
+DisplayName = "Kemmy Prompt Library"
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
