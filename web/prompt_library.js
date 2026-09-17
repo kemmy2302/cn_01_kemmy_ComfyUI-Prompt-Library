@@ -60,6 +60,7 @@ function element(tag, properties = {}, children = []) {
 }
 
 function isolateDomWidgetWheel(container) {
+  container.setAttribute("data-capture-wheel", "true");
   const stopCanvasWheel = (event) => event.stopPropagation();
   container.addEventListener("wheel", stopCanvasWheel, { capture: true, passive: true });
   container.addEventListener("mousewheel", stopCanvasWheel, { capture: true, passive: true });
