@@ -5,17 +5,17 @@ const API_ROOT = "/kemmy-prompt-library";
 
 const css = `
 .dom-widget:has(> .opt-panel){background:transparent!important;border:0!important;box-shadow:none!important;outline:0!important}
-.opt-panel{font:12px sans-serif;color:var(--input-text,#ddd);background:var(--comfy-input-bg,#222);padding:8px;border-radius:6px;box-sizing:border-box;width:100%;max-width:100%;overflow-x:hidden;overflow-y:auto;max-height:620px}
+.opt-panel{font:12px sans-serif;color:var(--input-text,#ddd);background:var(--comfy-input-bg,#222);padding:8px;border-radius:6px;box-sizing:border-box;width:100%;max-width:100%;overflow-x:hidden;overflow-y:auto;max-height:620px;overscroll-behavior:contain}
 .opt-library-panel{height:620px;max-height:620px;overflow:hidden;display:flex;flex-direction:column}
 .opt-toolbar,.opt-row-actions{display:flex;gap:5px;align-items:center;margin-bottom:6px;flex-wrap:wrap;min-width:0;max-width:100%}.opt-toolbar>*,.opt-row-actions>*{min-width:0;max-width:100%}
 .opt-top-spacer{height:16px;min-height:16px;flex:none}
 .opt-filter-bar{position:sticky;top:0;z-index:2;background:var(--comfy-input-bg,#222);padding:4px 0 6px}
 .opt-filter-grid{display:grid;grid-template-columns:minmax(120px,1fr) minmax(90px,.6fr);gap:5px}
-.opt-tabs{display:flex;gap:4px;overflow-x:auto;white-space:nowrap;padding:4px 0;scrollbar-width:thin}.opt-tab{flex:0 0 auto}.opt-tab-active{border-color:#6aa9ff!important;background:#17395d!important}
+.opt-tabs{display:flex;gap:4px;overflow-x:auto;white-space:nowrap;padding:4px 0;scrollbar-width:thin;overscroll-behavior:contain}.opt-tab{flex:0 0 auto}.opt-tab-active{border-color:#6aa9ff!important;background:#17395d!important}
 .opt-category-editor{border:1px solid #555;border-radius:6px;padding:7px;margin:6px 0}.opt-category-row{display:grid;grid-template-columns:minmax(100px,1fr) auto auto;gap:5px;align-items:center;margin:5px 0}
 .opt-selection-summary{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:6px 0}.opt-selection-summary .opt-count{font-weight:700;flex:1}
-.opt-selected-pane{flex:0 1 auto;max-height:190px;min-height:0;overflow:auto;border-bottom:1px solid #555;padding-bottom:6px}
-.opt-library-pane{flex:1 1 auto;min-height:160px;overflow-x:hidden;overflow-y:auto;padding-top:4px}
+.opt-selected-pane{flex:0 1 auto;max-height:190px;min-height:0;overflow:auto;border-bottom:1px solid #555;padding-bottom:6px;overscroll-behavior:contain}
+.opt-library-pane{flex:1 1 auto;min-height:160px;overflow-x:hidden;overflow-y:auto;padding-top:4px;overscroll-behavior:contain}
 .opt-panel button,.opt-panel input,.opt-panel select,.opt-panel textarea{font:inherit;color:inherit;background:#292929;border:1px solid #555;border-radius:4px;padding:4px;box-sizing:border-box}
 .opt-panel button{cursor:pointer}.opt-panel button:hover{background:#3a3a3a}.opt-panel input[type=text],.opt-panel textarea,.opt-panel select{width:100%}
 .opt-card{border:1px solid #555;border-radius:6px;padding:6px;margin:6px 0;background:#202020;max-width:100%;box-sizing:border-box}.opt-card-head{display:flex;gap:6px;align-items:center;min-width:0;max-width:100%;flex-wrap:wrap}.opt-card img,.opt-card-head>img{width:58px;height:58px;min-width:58px;object-fit:cover;border-radius:5px;background:#111}.opt-card textarea{min-height:58px;resize:vertical;margin-top:5px}.opt-muted{opacity:.7}.opt-selected{border-color:#6aa9ff;background:#17283c;box-shadow:inset 3px 0 #6aa9ff}.opt-title{font-weight:700;margin:5px 0}.opt-hidden{display:none!important}.opt-status{min-height:16px;color:#9dccff}.opt-assignment-select{width:auto!important;min-width:105px;max-width:135px}
@@ -57,6 +57,12 @@ function element(tag, properties = {}, children = []) {
   Object.assign(item, properties);
   for (const child of children) item.append(child);
   return item;
+}
+
+function isolateDomWidgetWheel(container) {
+  const stopCanvasWheel = (event) => event.stopPropagation();
+  container.addEventListener("wheel", stopCanvasWheel, { capture: true, passive: true });
+  container.addEventListener("mousewheel", stopCanvasWheel, { capture: true, passive: true });
 }
 
 async function jsonRequest(url, options = {}) {
@@ -102,6 +108,7 @@ function setupLibraryNode(node) {
   let library = { version: 2, categories: [], entries: [...state.snapshot] };
 
   const container = element("div", { className: "opt-panel opt-library-panel" });
+  isolateDomWidgetWheel(container);
   const topSpacer = element("div", { className: "opt-top-spacer" });
   const status = element("div", { className: "opt-status" });
   const selectedArea = element("div", { className: "opt-selected-pane" });
